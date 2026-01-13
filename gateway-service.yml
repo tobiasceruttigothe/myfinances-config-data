@@ -4,7 +4,8 @@ server:
 eureka:
   client:
     serviceUrl:
-      defaultZone: http://localhost:8761/eureka/
+      # TRUCO PRO: Si existe la variable EUREKA_URI usa eso, si no, usa localhost (para tu IDE)
+      defaultZone: ${EUREKA_URI:http://localhost:8761/eureka/}
 
 spring:
   cloud:
