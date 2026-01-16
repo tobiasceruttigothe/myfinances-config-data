@@ -4,8 +4,8 @@ server:
 eureka:
   client:
     serviceUrl:
-      # SIN VARIABLES. Directo al grano.
-      defaultZone: http://discovery-server:8761/eureka/
+      # ✅ USAR VARIABLE DE ENTORNO
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
 
 spring:
   cloud:
@@ -15,7 +15,6 @@ spring:
           enabled: true
           lower-case-service-id: true
       routes:
-        # Aquí definimos las rutas explícitas
         - id: account-service-route
           uri: lb://ACCOUNT-SERVICE
           predicates:
