@@ -34,3 +34,10 @@ spring:
           # Debe coincidir EXACTAMENTE con lo que viene en el token.
           # NOTA: Esto puede dar problemas si Keycloak cree que es localhost. Probemos así primero.
           issuer-uri: http://localhost:8082/realms/myfinances-realm
+  management:
+  tracing:
+    sampling:
+      probability: 1.0 # 1.0 = 100% de las peticiones (En prod se usa 0.1)
+  zipkin:
+    tracing:
+      endpoint: http://zipkin:9411/api/v2/spans
