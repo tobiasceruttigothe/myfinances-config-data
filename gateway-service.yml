@@ -1,12 +1,6 @@
 server:
   port: 8080
 
-eureka:
-  client:
-    serviceUrl:
-      # ✅ USAR VARIABLE DE ENTORNO
-      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
-
 spring:
   cloud:
     gateway:
@@ -14,30 +8,18 @@ spring:
         locator:
           enabled: false
           lower-case-service-id: true
-      routes:
-        - id: account-service-route
-          uri: lb://ACCOUNT-SERVICE
-          predicates:
-            - Path=/api/v1/accounts/**, /api/v1/transactions/**
-        - id: investment-service-route
-          uri: lb://INVESTMENT-SERVICE
-          predicates:
-            - Path=/api/v1/investments/**
-  security:   
+
+  security:
     oauth2:
       resourceserver:
         jwt:
-          # Donde el Gateway va a buscar las claves públicas (JWK)
-          # Usamos el nombre del contenedor "keycloak" y el puerto interno 8080
           jwk-set-uri: http://keycloak:8080/realms/myfinances-realm/protocol/openid-connect/certs
-          # El emisor del token (issuer). Keycloak pone esto en el token.
-          # Debe coincidir EXACTAMENTE con lo que viene en el token.
-          # NOTA: Esto puede dar problemas si Keycloak cree que es localhost. Probemos así primero.
-          issuer-uri: http://localhost:8082/realms/myfinances-realm
-  management:
+
+management:
   tracing:
     sampling:
-      probability: 1.0 # 1.0 = 100% de las peticiones (En prod se usa 0.1)
-  zipkin:
-    tracing:
-      endpoint: http://zipkin:9411/api/v2/spans
+      probability: 1.0
+
+zipkin:
+  tracing:
+    endpoint: http://zipkin:9411/api/v2/spans
