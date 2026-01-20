@@ -2,29 +2,108 @@ server:
   port: 8080
 
 spring:
+  application:
+    name: gateway-service
+  
   cloud:
     gateway:
+      # Rutas manuales (preferidas sobre discovery automático)
+      routes:
+        # ==================== USER SERVICE ====================
+        - id: user-service
+          uri: http://user-service:8084
+          predicates:
+            - Path=/api/v1/users/**
+          filters:
+            - JwtAuthenticationFilter
+        
+        # ==================== ACCOUNT SERVICE ====================
+        - id: account-service
+          uri: http://account-service:8081
+          predicates:
+            - Path=/api/v1/accounts/**,/api/v1/transactions/**,/api/v1/categories/**,/api/v1/reports/**
+          filters:
+            - JwtAuthenticationFilter
+        
+        # ==================== INVESTMENT SERVICE ====================
+        - id: investment-service
+          uri: http://investment-service:8083
+          predicates:
+            - Path=/api/v1/investments/**
+          filters:
+            - JwtAuthenticationFilter
+        
+        # ==================== GOALS SERVICE ====================
+        - id: goals-service
+          uri: http://goals-service:8085
+          predicates:
+            - Path=/api/v1/goals/**
+          filters:
+            - JwtAuthenticationFilter
+      
+      # Discovery locator (deshabilitado porque usamos rutas manuales)
       discovery:
         locator:
           enabled: false
           lower-case-service-id: true
-
+      
+      # Configuración global de filtros
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+      
+      # CORS global
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins: "*"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+            exposedHeaders:
+              - Authorization
+  
+  # ==================== SECURITY ====================
   security:
     oauth2:
       resourceserver:
         jwt:
           jwk-set-uri: http://keycloak:8080/realms/myfinances-realm/protocol/openid-connect/certs
 
+# ==================== OBSERVABILITY ====================
 management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
   tracing:
     sampling:
       probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: http://zipkin:9411/api/v2/spans
 
-zipkin:
-  tracing:
-    endpoint: http://zipkin:9411/api/v2/spans
-    
+# ==================== LOGGING ====================
 logging:
   pattern:
     level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    com.myfinances: DEBUG
 
+# ==================== RESILIENCE4J ====================
+resilience4j:
+  circuitbreaker:
+    instances:
+      investmentBreaker:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 5s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
