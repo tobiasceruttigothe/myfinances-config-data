@@ -7,7 +7,6 @@ spring:
   
   cloud:
     gateway:
-      # Rutas manuales (preferidas sobre discovery automático)
       routes:
         # ==================== USER SERVICE ====================
         - id: user-service
@@ -18,6 +17,36 @@ spring:
             - JwtAuthenticationFilter
         
         # ==================== ACCOUNT SERVICE ====================
+        # ⭐ IMPORTANTE: Rutas MÁS ESPECÍFICAS primero
+        - id: account-service-categories-root
+          uri: http://account-service:8081
+          predicates:
+            - Path=/api/v1/categories/root
+          filters:
+            - JwtAuthenticationFilter
+        
+        - id: account-service-categories-subcategories
+          uri: http://account-service:8081
+          predicates:
+            - Path=/api/v1/categories/*/subcategories
+          filters:
+            - JwtAuthenticationFilter
+        
+        - id: account-service-categories-by-name
+          uri: http://account-service:8081
+          predicates:
+            - Path=/api/v1/categories/name/**
+          filters:
+            - JwtAuthenticationFilter
+        
+        - id: account-service-categories-init
+          uri: http://account-service:8081
+          predicates:
+            - Path=/api/v1/categories/initialize-for-user/**
+          filters:
+            - JwtAuthenticationFilter
+        
+        # Rutas genéricas de account-service (van AL FINAL)
         - id: account-service
           uri: http://account-service:8081
           predicates:
@@ -41,17 +70,14 @@ spring:
           filters:
             - JwtAuthenticationFilter
       
-      # Discovery locator (deshabilitado porque usamos rutas manuales)
       discovery:
         locator:
           enabled: false
           lower-case-service-id: true
       
-      # Configuración global de filtros
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
       
-      # CORS global
       globalcors:
         corsConfigurations:
           '[/**]':
@@ -66,14 +92,12 @@ spring:
             exposedHeaders:
               - Authorization
   
-  # ==================== SECURITY ====================
   security:
     oauth2:
       resourceserver:
         jwt:
           jwk-set-uri: http://keycloak:8080/realms/myfinances-realm/protocol/openid-connect/certs
 
-# ==================== OBSERVABILITY ====================
 management:
   endpoints:
     web:
@@ -86,7 +110,6 @@ management:
     tracing:
       endpoint: http://zipkin:9411/api/v2/spans
 
-# ==================== LOGGING ====================
 logging:
   pattern:
     level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
@@ -94,7 +117,6 @@ logging:
     org.springframework.cloud.gateway: DEBUG
     com.myfinances: DEBUG
 
-# ==================== RESILIENCE4J ====================
 resilience4j:
   circuitbreaker:
     instances:
